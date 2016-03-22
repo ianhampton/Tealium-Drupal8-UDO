@@ -1,0 +1,67 @@
+<?php
+/* Tealium Basic Data Layer
+ * ------------------------
+ * Adds a basic data layer including custom fields.
+ *
+ */
+
+$utagdata = array();
+
+function tealium_add_data( $key, $value ) {
+	global $utagdata;
+	$utagdata[$key] = $value;
+	return $utagdata;
+}
+
+
+function tealium_basic_data_preprocess_page( &$variables ) {
+
+	tealium_add_data( 'page_title', \Drupal::service('title_resolver')->getTitle(\Drupal::request(), \Drupal::routeMatch()->getRouteObject()) );
+
+	$node = $variables['node'];
+	$page = $variables['page'];
+
+	if ( !empty($page)  ) {
+		$node_type = $page['#type'];
+		tealium_add_data( 'page_type', $node_type );
+	}
+
+	// Add CCK/custom fields
+	foreach ( $node as $key => $value ) {
+		$exp_key = explode( '_', $key );
+		if ( $exp_key[0] == 'field' ) {
+			$values = array();
+			if ( isset( $value ) ) {
+				foreach ( $value as $item ) {
+					if ( ( isset( $item->value ) ) && ( !empty( $item->value ) ) ) {
+						$values[] = $item->value;
+					}
+				}
+				if ( !empty( $values ) ) {
+					tealium_add_data( $key, implode( ', ', $values ) );
+				}
+			}
+		}
+	}
+	global $utagdata;
+	// Encode data object
+	if ( version_compare( phpversion(), '5.4.0', '>=' ) ) {
+		// Pretty print JSON if PHP version supports it
+		$jsondata = json_encode( $utagdata, JSON_PRETTY_PRINT );
+	}
+	else {
+		$jsondata = json_encode( $utagdata );
+
+		// Apply pretty print function
+		$jsondata = prettyPrintJSON( $jsondata );
+	}
+
+	// Output data object
+	if ( json_decode( $jsondata ) !== null ) {
+		$utag_data = "\n<script type=\"text/javascript\">\nvar utag_data = {$jsondata};\n</script>\n";
+
+	}
+
+	echo $utag_data;
+	return $utag_data;
+}

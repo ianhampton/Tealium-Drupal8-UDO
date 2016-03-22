@@ -1,0 +1,6 @@
+name: 'Tealium Basic Data Layer'
+description: 'Provides a basic data layer for your Drupal site'
+core: 8.x
+version: 8.x-0.5
+package: Statistics
+type: module
